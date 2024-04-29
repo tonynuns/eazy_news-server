@@ -11,15 +11,11 @@ const getSources = async () => {
 
 	try {
 		//fetch subset data of top news publisher sources
-		const response = await axios.get(
-			`${baseUrl}/sources?language=en&apiKey=${apiKey}`
-		);
+		const response = await axios.get(`${baseUrl}/sources?language=en&apiKey=${apiKey}`);
 		const sourcesArr = response.data.sources;
 
 		//filter list of source publishers by native english speaking countries
-		const engSourcesArr = sourcesArr.filter((sources) =>
-			sourceCountries.includes(sources.country)
-		);
+		const engSourcesArr = sourcesArr.filter((sources) => sourceCountries.includes(sources.country));
 		return engSourcesArr;
 	} catch (error) {
 		console.log(`${error}: Unable to fetch news sources from NewsAPI`);
@@ -43,9 +39,7 @@ const getNews = async () => {
 
 		//match news articles id to sources id and append news category key/value pair to news articles
 		articlesArr.map((article) => {
-			const foundSource = engSourcesArr.find(
-				(source) => source.id === article.source.id
-			);
+			const foundSource = engSourcesArr.find((source) => source.id === article.source.id);
 			article.category = foundSource.category;
 			return article;
 		});
@@ -59,48 +53,44 @@ const getNews = async () => {
 
 const addNews = async () => {
 	//sites whose news contents cannot be parsed
-	const excludedSources = [
-		"the-hill",
-		"financial-post",
-		"the-wall-street-journal",
-	];
+	// const excludedSources = ["the-hill", "financial-post", "the-wall-street-journal"]; // TODO: check to delete before submission
+
 	const articlesArr = await getNews();
 
 	articlesArr
-		.filter((article) => !excludedSources.includes(article.source.id))
+		// .filter((article) => !excludedSources.includes(article.source.id)) // TODO: check to delete before submission
 		.map(async (article) => {
 			//employ helper functions for content and published date
-			const content = await helperFunctions.getSimpleContent(article.url);
-			const publishedDate = helperFunctions.dateTimeConversion(
-				article.publishedAt
-			);
+			// const content = await helperFunctions.getSimpleContent(article.url); // TODO: check to delete before submission
+			const publishedDate = helperFunctions.dateTimeConversion(article.publishedAt);
 
-			if (content !== "error") {
-				//create newsObj
-				const simpleNews = {
-					source: article.source.name,
-					author: article.author,
-					title: article.title,
-					category: article.category,
-					summary: article.description,
-					image_url: article.urlToImage,
-					content: content,
-					views: 0,
-					likes: 0,
-					published_at: publishedDate,
-				};
-				try {
-					//upload news objects to database
-					const uploadedNews = await knex("news").insert(simpleNews);
-					// const deleteNews = await knex("news").del();
-					return uploadedNews;
-				} catch (error) {
-					console.log(
-						`Unable to upload top headline news to database for Title: "${article.title}", URL: ${article.url}`
-					);
-					return;
-				}
+			// if (content !== "error") { // TODO: check to delete before submission
+			//create newsObj
+			const simpleNews = {
+				source: article.source.name,
+				author: article.author,
+				title: article.title,
+				category: article.category,
+				summary: article.description,
+				image_url: article.urlToImage,
+				content: article.content,
+				news_url: article.url,
+				views: 0,
+				likes: 0,
+				published_at: publishedDate,
+			};
+			try {
+				//upload news objects to database
+				const uploadedNews = await knex("news").insert(simpleNews);
+				// const deleteNews = await knex("news").del();  //TODO: delete before submission
+				return uploadedNews;
+			} catch (error) {
+				console.log(
+					`Unable to upload top headline news to database for Title: "${article.title}", URL: ${article.url}`
+				);
+				return;
 			}
+			// }
 		});
 };
 
