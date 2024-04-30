@@ -16,6 +16,23 @@ const getCurrentNews = async (req, res) => {
 	}
 };
 
+const getArchiveNews = async (req, res) => {
+	const { startdate, enddate } = req.headers;
+	try {
+		// Fetch news articles published between provided date range
+		const newsArr = await knex("news")
+			.where("published_at", ">=", new Date(startdate))
+			.where("published_at", "<=", new Date(enddate));
+
+		res.status(200).json(newsArr);
+	} catch (error) {
+		res.status(500).json({
+			message: `Error retrieving news: ${error}`,
+		});
+	}
+};
+
 module.exports = {
 	getCurrentNews,
+	getArchiveNews,
 };
