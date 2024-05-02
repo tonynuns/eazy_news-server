@@ -32,35 +32,57 @@ const getArchiveNews = async (req, res) => {
 	}
 };
 
-const getNewsComments = async (req, res) => {
+const getNewsDetail = async (req, res) => {
 	const { id } = req.params;
-
 	try {
-		// check if a news article with the given id exists
-		const news = await knex("news").where("id", id).first();
-		if (!news) {
+		const foundNews = await knex("news").where("id", id);
+		if (foundNews.length === 0) {
 			return res.status(404).json({
-				message: `News with ID ${id} not found`,
+				message: `News with ID ${id} not found.`,
+				length: 0,
 			});
 		}
-
-		// check if comments existi for news article with the given id
-		const newsComments = await knex("comments").where("news_id", id).first();
-		if (!newsComments) {
-			return res.status(404).json({
-				message: `Comments for news with ID ${id} not found`,
-			});
-		}
-
-		// fetch all comments with the given news id and append comment author names from the user table
-		const comments = await knex("comments")
-			.join("users", "users.id", "comments.user_id")
-			.select("comments.*", "users.first_name", "users.last_name")
-			.where("news_id", id);
-		res.status(200).json(comments);
+		const currentNews = foundNews[0];
+		res.status(200).json(currentNews);
 	} catch (error) {
 		res.status(500).json({
-			message: `Error retrieving comments: ${error}`,
+			message: `Unable to retrieve news with ID ${id}.`,
+		});
+	}
+};
+
+const updateViews = async (req, res) => {
+	const { id } = req.params;
+	try {
+		const rowsUpdated = await knex("news").where("id", id).update(req.body);
+		if (rowsUpdated === 0) {
+			return res.status(404).json({
+				message: `news with ID ${id} not found`,
+			});
+		}
+		const updatedNews = await knex("news").where("id", id);
+		res.status(200).json(updatedNews[0].views);
+	} catch (error) {
+		res.status(500).json({
+			message: `Unable to update views for news with ID ${id}: ${error}`,
+		});
+	}
+};
+
+const updateLikes = async (req, res) => {
+	const { id } = req.params;
+	try {
+		const rowsUpdated = await knex("news").where("id", id).update(req.body);
+		if (rowsUpdated === 0) {
+			return res.status(404).json({
+				message: `news with ID ${id} not found`,
+			});
+		}
+		const updatedNews = await knex("news").where("id", id);
+		res.status(200).json(updatedNews[0].likes);
+	} catch (error) {
+		res.status(500).json({
+			message: `Unable to update views for news with ID ${id}: ${error}`,
 		});
 	}
 };
@@ -68,5 +90,7 @@ const getNewsComments = async (req, res) => {
 module.exports = {
 	getCurrentNews,
 	getArchiveNews,
-	getNewsComments,
+	getNewsDetail,
+	updateViews,
+	updateLikes,
 };
