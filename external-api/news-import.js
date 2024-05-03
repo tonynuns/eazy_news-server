@@ -52,46 +52,52 @@ const getNews = async () => {
 };
 
 const addNews = async () => {
-	//sites whose news contents cannot be parsed
-	// const excludedSources = ["the-hill", "financial-post", "the-wall-street-journal"]; // TODO: check to delete before submission
-
 	const articlesArr = await getNews();
 
-	articlesArr
-		// .filter((article) => !excludedSources.includes(article.source.id)) // TODO: check to delete before submission
-		.map(async (article) => {
-			//employ helper functions for content and published date
-			// const content = await helperFunctions.getSimpleContent(article.url); // TODO: check to delete before submission
-			const publishedDate = helperFunctions.dateTimeConversion(article.publishedAt);
+	articlesArr.map(async (article) => {
+		const publishedDate = helperFunctions.dateTimeConversion(article.publishedAt);
 
-			// if (content !== "error") { // TODO: check to delete before submission
-			//create newsObj
-			const simpleNews = {
-				source: article.source.name,
-				author: article.author,
-				title: article.title,
-				category: article.category,
-				summary: article.description,
-				image_url: article.urlToImage,
-				content: article.content,
-				news_url: article.url,
-				views: 0,
-				likes: 0,
-				published_at: publishedDate,
-			};
-			try {
-				//upload news objects to database
-				const uploadedNews = await knex("news").insert(simpleNews);
-				// const deleteNews = await knex("news").del();  //TODO: delete before submission
-				return uploadedNews;
-			} catch (error) {
-				console.log(
-					`Unable to upload top headline news to database for Title: "${article.title}", URL: ${article.url}`
-				);
-				return;
-			}
-			// }
-		});
+		//create newsObj
+		const simpleNews = {
+			source: article.source.name,
+			author: article.author,
+			title: article.title,
+			category: article.category,
+			summary: article.description,
+			image_url: article.urlToImage,
+			content: article.content,
+			news_url: article.url,
+			views: 0,
+			likes: 0,
+			published_at: publishedDate,
+		};
+		try {
+			//upload news objects to database
+			const uploadedNews = await knex("news").insert(simpleNews);
+			return uploadedNews;
+		} catch (error) {
+			console.log(
+				`Unable to upload top headline news to database for Title: "${article.title}", URL: ${article.url}`
+			);
+			return;
+		}
+	});
 };
 
-module.exports = { addNews };
+const deleteNews = async () => {
+	const currentDateObj = new Date();
+	const sixtyDaysMlSec = 60 * 24 * 60 * 60 * 1000;
+	const newsCutOffDate = currentDateObj.getTime() - sixtyDaysMlSec;
+
+	try {
+		// Delete news articles published more than 60 days ago from the database
+		const deletedNews = await knex("news")
+			.where("published_at", "<", new Date(newsCutOffDate))
+			.delete();
+		return deletedNews;
+	} catch (error) {
+		console.log(`Unable to delete news`);
+	}
+};
+
+module.exports = { addNews, deleteNews };
